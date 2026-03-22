@@ -59,6 +59,12 @@ exports.getNotificationHistory = async (req, res, next) => {
   try {
     const email = req.user.email;
     const history = await Notification.find({ recipientEmail: email }).sort({ createdAt: -1 });
+
+    // Strict two-way cache busting to prevent 304 Not Modified responses
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     res.status(200).json({ notifications: history });
   } catch (error) {
     next(error);

@@ -16,6 +16,11 @@ app.use(express.json());
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Health Check Endpoint for AWS ALB
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', service: 'notification' });
+});
+
 // Routes
 app.use('/api/notifications', notificationRoutes);
 

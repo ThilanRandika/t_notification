@@ -43,9 +43,11 @@ const connectDB = async () => {
   }
 };
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Notification Service running on port ${PORT}`);
-    console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
-  });
+// Start the Express server immediately for ALB health checks
+app.listen(PORT, () => {
+  console.log(`Notification Service running on port ${PORT}`);
+  console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
 });
+
+// Boot the database asynchronously in the background
+connectDB();

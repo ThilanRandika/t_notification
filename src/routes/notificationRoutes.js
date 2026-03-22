@@ -1,6 +1,7 @@
 const express = require('express');
 const { sendWelcomeEmail, sendOrderPlacedEmail, sendOrderStatusEmail, getNotificationHistory } = require('../controllers/notificationController');
 const { validateWelcome, validateOrderPlaced, validateOrderStatus } = require('../middleware/validation');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -33,20 +34,18 @@ router.post('/order-status', validateOrderStatus, sendOrderStatusEmail);
 
 /**
  * @swagger
- * /api/notifications/{email}:
+ * /api/notifications/my-history:
  *   get:
- *     summary: Get notification history for a specific email
+ *     summary: Get notification history for the authenticated user
  *     tags: [Notifications]
- *     parameters:
- *       - in: path
- *         name: email
- *         required: true
- *         schema:
- *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of notifications
+ *       401:
+ *         description: Unauthorized token
  */
-router.get('/:email', getNotificationHistory);
+router.get('/my-history', authenticate, getNotificationHistory);
 
 module.exports = router;

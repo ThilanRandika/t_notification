@@ -57,7 +57,7 @@ exports.sendOrderStatusEmail = async (req, res, next) => {
 
 exports.getNotificationHistory = async (req, res, next) => {
   try {
-    const { email } = req.params;
+    const email = req.user.email;
     const history = await Notification.find({ recipientEmail: email }).sort({ createdAt: -1 });
     res.status(200).json({ notifications: history });
   } catch (error) {

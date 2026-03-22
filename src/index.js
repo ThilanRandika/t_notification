@@ -11,7 +11,11 @@ const app = express();
 
 // Security and utility middlewares
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires']
+}));
 app.use(express.json());
 
 // API Documentation

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const { swaggerUi, swaggerSpec } = require('./config/swagger');
 const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middleware/errorHandler');
@@ -29,7 +30,22 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3004;
 
-app.listen(PORT, () => {
-  console.log(`Notification Service running on port ${PORT}`);
-  console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/shopease-notifications', { serverSelectionTimeoutMS: 2000 });
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    console.warn('Local MongoDB connection failed. Booting In-Memory DB for testing fallback...');
+    const { MongoMemoryServer } = require('mongodb-memory-server');
+    const mongoServer = await MongoMemoryServer.create();
+    await mongoose.connect(mongoServer.getUri());
+    console.log('Connected to In-Memory MongoDB Fallback Instance');
+  }
+};
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Notification Service running on port ${PORT}`);
+    console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
+  });
 });

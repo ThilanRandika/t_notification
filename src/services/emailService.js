@@ -11,44 +11,58 @@ class EmailService {
     console.log(`======================================================\n`);
   }
 
-  async sendWelcome(email, name) {
-    this._printHeader('Welcome to Beddings.lk!');
+  _printToConsole(email, subject, bodyChunks) {
+    this._printHeader(subject);
     console.log(`TO: ${email}`);
-    console.log(`\nHi ${name},`);
-    console.log(`\nWelcome to Beddings.lk! We are thrilled to have you here.`);
-    console.log(`Explore our premium luxury silk pillowcases and ultra-soft bedsheets.`);
+    bodyChunks.forEach(chunk => console.log(chunk));
     this._printFooter();
-    return Promise.resolve(true);
   }
 
-  async sendOrderPlaced(orderId, userEmail, totalAmount, items, shippingAddress) {
-    this._printHeader(`Your Beddings.lk Order #${orderId} is Confirmed!`);
-    console.log(`TO: ${userEmail}`);
-    console.log(`\nGreat news! We've received your order and are getting it ready.`);
-    console.log(`\n--- Order Details ---`);
+  async generateWelcome(email, name) {
+    const subject = 'Welcome to Beddings.lk!';
+    const bodyChunks = [
+      `\nHi ${name},`,
+      `\nWelcome to Beddings.lk! We are thrilled to have you here.`,
+      `Explore our premium luxury silk pillowcases and ultra-soft bedsheets.`
+    ];
+    this._printToConsole(email, subject, bodyChunks);
+    return { subject, body: bodyChunks.join('\n') };
+  }
+
+  async generateOrderPlaced(orderId, userEmail, totalAmount, items, shippingAddress) {
+    const subject = `Your Beddings.lk Order #${orderId} is Confirmed!`;
+    const bodyChunks = [
+      `\nGreat news! We've received your order and are getting it ready.`,
+      `\n--- Order Details ---`
+    ];
+    
     if (items && Array.isArray(items)) {
       items.forEach(item => {
-        console.log(`- ${item.quantity}x ${item.productName} @ LKR ${item.price}`);
+        bodyChunks.push(`- ${item.quantity}x ${item.productName} @ LKR ${item.price}`);
       });
     }
-    console.log(`\nTotal Amount: LKR ${totalAmount}`);
-    console.log(`\nShipping To:`);
+    
+    bodyChunks.push(`\nTotal Amount: LKR ${totalAmount}`);
+    bodyChunks.push(`\nShipping To:`);
     if (shippingAddress) {
-      console.log(`${shippingAddress.street || ''}, ${shippingAddress.city || ''}, ${shippingAddress.country || ''}`);
+      bodyChunks.push(`${shippingAddress.street || ''}, ${shippingAddress.city || ''}, ${shippingAddress.country || ''}`);
     }
-    this._printFooter();
-    return Promise.resolve(true);
+    
+    this._printToConsole(userEmail, subject, bodyChunks);
+    return { subject, body: bodyChunks.join('\n') };
   }
 
-  async sendOrderStatus(orderId, userEmail, status) {
-    this._printHeader(`Update on your Beddings.lk Order #${orderId}`);
-    console.log(`TO: ${userEmail}`);
-    console.log(`\nYour order status has been updated to: [ ${status.toUpperCase()} ]`);
+  async generateOrderStatus(orderId, userEmail, status) {
+    const subject = `Update on your Beddings.lk Order #${orderId}`;
+    const bodyChunks = [
+      `\nYour order status has been updated to: [ ${status.toUpperCase()} ]`
+    ];
     if (status.toLowerCase() === 'shipped') {
-      console.log(`Your premium bedding is on its way to you! Expect it soon.`);
+      bodyChunks.push(`Your premium bedding is on its way to you! Expect it soon.`);
     }
-    this._printFooter();
-    return Promise.resolve(true);
+    
+    this._printToConsole(userEmail, subject, bodyChunks);
+    return { subject, body: bodyChunks.join('\n') };
   }
 }
 

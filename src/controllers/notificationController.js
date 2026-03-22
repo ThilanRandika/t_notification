@@ -1,10 +1,19 @@
 const emailService = require('../services/emailService');
+const Notification = require('../models/Notification');
 
 exports.sendWelcomeEmail = async (req, res, next) => {
   try {
     const { email, name } = req.body;
-    await emailService.sendWelcome(email, name);
-    res.status(200).json({ message: 'Welcome email sent successfully' });
+    const { subject, body } = await emailService.generateWelcome(email, name);
+    
+    const notification = await Notification.create({
+      recipientEmail: email,
+      type: 'welcome',
+      subject,
+      body
+    });
+
+    res.status(200).json({ message: 'Welcome email sent and logged', notification });
   } catch (error) {
     next(error);
   }
@@ -13,8 +22,16 @@ exports.sendWelcomeEmail = async (req, res, next) => {
 exports.sendOrderPlacedEmail = async (req, res, next) => {
   try {
     const { orderId, userEmail, totalAmount, items, shippingAddress } = req.body;
-    await emailService.sendOrderPlaced(orderId, userEmail, totalAmount, items, shippingAddress);
-    res.status(200).json({ message: 'Order confirmation email sent' });
+    const { subject, body } = await emailService.generateOrderPlaced(orderId, userEmail, totalAmount, items, shippingAddress);
+    
+    const notification = await Notification.create({
+      recipientEmail: userEmail,
+      type: 'order',
+      subject,
+      body
+    });
+
+    res.status(200).json({ message: 'Order confirmation sent and logged', notification });
   } catch (error) {
     next(error);
   }
@@ -23,8 +40,26 @@ exports.sendOrderPlacedEmail = async (req, res, next) => {
 exports.sendOrderStatusEmail = async (req, res, next) => {
   try {
     const { orderId, userEmail, status } = req.body;
-    await emailService.sendOrderStatus(orderId, userEmail, status);
-    res.status(200).json({ message: 'Order status email sent' });
+    const { subject, body } = await emailService.generateOrderStatus(orderId, userEmail, status);
+    
+    const notification = await Notification.create({
+      recipientEmail: userEmail,
+      type: 'status',
+      subject,
+      body
+    });
+
+    res.status(200).json({ message: 'Order status sent and logged', notification });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getNotificationHistory = async (req, res, next) => {
+  try {
+    const { email } = req.params;
+    const history = await Notification.find({ recipientEmail: email }).sort({ createdAt: -1 });
+    res.status(200).json({ notifications: history });
   } catch (error) {
     next(error);
   }

@@ -32,14 +32,10 @@ const PORT = process.env.PORT || 3004;
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/shopease-notifications', { serverSelectionTimeoutMS: 2000 });
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/shopease-notifications');
     console.log('Connected to MongoDB');
   } catch (err) {
-    console.warn('Local MongoDB connection failed. Booting In-Memory DB for testing fallback...');
-    const { MongoMemoryServer } = require('mongodb-memory-server');
-    const mongoServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoServer.getUri());
-    console.log('Connected to In-Memory MongoDB Fallback Instance');
+    console.error('MongoDB connection error:', err.message);
   }
 };
 

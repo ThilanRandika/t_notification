@@ -23,6 +23,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health Check Endpoint for AWS ALB
 app.get('/health', (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ status: 'unhealthy', reason: 'Database disconnected' });
+  }
   res.status(200).json({ status: 'healthy', service: 'notification' });
 });
 
@@ -38,16 +41,17 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/shopease-notifications');
     console.log('Connected to MongoDB');
+    
+    // Start the Express server after DB connects
+    app.listen(PORT, () => {
+      console.log(`Notification Service running on port ${PORT}`);
+      console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
+    });
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
+    process.exit(1); // Exit process to allow ECS to restart
   }
 };
 
-// Start the Express server immediately for ALB health checks
-app.listen(PORT, () => {
-  console.log(`Notification Service running on port ${PORT}`);
-  console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
-});
-
-// Boot the database asynchronously in the background
+// Boot the database
 connectDB();

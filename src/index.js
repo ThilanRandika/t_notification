@@ -9,7 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Security and utility middlewares
+// Security and utility middlewares 1
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*',

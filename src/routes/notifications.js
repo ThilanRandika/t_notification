@@ -1,9 +1,12 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const axios = require('axios');
 const Notification = require('../models/Notification');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:3002';
 
 // Helper functions for mock email printing
 const printHeader = (title) => {
@@ -50,7 +53,7 @@ router.post(
         `\nWelcome to ShopEase! We are thrilled to have you here.`,
         `Explore our premium luxury silk pillowcases and ultra-soft bedsheets.`
       ];
-      
+
       printToConsole(email, subject, bodyChunks);
       const emailBody = bodyChunks.join('\n');
 
@@ -95,19 +98,37 @@ router.post(
         `\nGreat news! We've received your order and are getting it ready.`,
         `\n--- Order Details ---`
       ];
-      
+
       if (items && Array.isArray(items)) {
-        items.forEach(item => {
-          bodyChunks.push(`- ${item.quantity}x ${item.productName} @ LKR ${item.price}`);
-        });
+        for (const item of items) {
+          let enrichedName = item.productName || 'Unknown Product';
+          let imageUrlStr = '';
+
+          if (item.productId) {
+            try {
+              const { data } = await axios.get(`${PRODUCT_SERVICE_URL}/products/${item.productId}`, { timeout: 3000 });
+              if (data && data.product) {
+                enrichedName = data.product.name || enrichedName;
+                if (data.product.imageUrl) {
+                  imageUrlStr = ` [Image: ${data.product.imageUrl}]`;
+                }
+              }
+            } catch (err) {
+              console.warn(`[Hydration Warning] Could not fetch product ${item.productId}: ${err.message}`);
+              // Graceful degradation: fall back to basic text from initial payload
+            }
+          }
+
+          bodyChunks.push(`- ${item.quantity}x ${enrichedName}${imageUrlStr} @ LKR ${item.price}`);
+        }
       }
-      
+
       bodyChunks.push(`\nTotal Amount: LKR ${totalAmount}`);
       bodyChunks.push(`\nShipping To:`);
       if (shippingAddress) {
         bodyChunks.push(`${shippingAddress.street || ''}, ${shippingAddress.city || ''}, ${shippingAddress.country || ''}`);
       }
-      
+
       printToConsole(userEmail, subject, bodyChunks);
       const emailBody = bodyChunks.join('\n');
 
@@ -152,7 +173,7 @@ router.post(
       if (status.toLowerCase() === 'shipped') {
         bodyChunks.push(`Your premium bedding is on its way to you! Expect it soon.`);
       }
-      
+
       printToConsole(userEmail, subject, bodyChunks);
       const emailBody = bodyChunks.join('\n');
 

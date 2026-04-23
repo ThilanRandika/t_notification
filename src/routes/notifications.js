@@ -8,13 +8,13 @@ const router = express.Router();
 // Helper functions for mock email printing
 const printHeader = (title) => {
   console.log('\n======================================================');
-  console.log(`✉️  NEW EMAIL INTERCEPTED - Beddings.lk Notification`);
+  console.log(`✉️  NEW EMAIL INTERCEPTED - ShopEase Notification`);
   console.log(`======================================================`);
   console.log(`SUBJECT: ${title}`);
 };
 
 const printFooter = () => {
-  console.log(`\nThanks for choosing Beddings.lk - Sleep Better!`);
+  console.log(`\nThanks for choosing ShopEase - Sleep Better!`);
   console.log(`======================================================\n`);
 };
 
@@ -44,10 +44,10 @@ router.post(
 
     try {
       const { email, name } = req.body;
-      const subject = 'Welcome to Beddings.lk!';
+      const subject = 'Welcome to ShopEase!';
       const bodyChunks = [
         `\nHi ${name},`,
-        `\nWelcome to Beddings.lk! We are thrilled to have you here.`,
+        `\nWelcome to ShopEase! We are thrilled to have you here.`,
         `Explore our premium luxury silk pillowcases and ultra-soft bedsheets.`
       ];
       
@@ -90,7 +90,7 @@ router.post(
 
     try {
       const { orderId, userEmail, totalAmount, items, shippingAddress } = req.body;
-      const subject = `Your Beddings.lk Order #${orderId} is Confirmed!`;
+      const subject = `Your ShopEase Order #${orderId} is Confirmed!`;
       const bodyChunks = [
         `\nGreat news! We've received your order and are getting it ready.`,
         `\n--- Order Details ---`
@@ -145,7 +145,7 @@ router.post(
 
     try {
       const { orderId, userEmail, status } = req.body;
-      const subject = `Update on your Beddings.lk Order #${orderId}`;
+      const subject = `Update on your ShopEase Order #${orderId}`;
       const bodyChunks = [
         `\nYour order status has been updated to: [ ${status.toUpperCase()} ]`
       ];

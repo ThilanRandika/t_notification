@@ -4,9 +4,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Beddings.lk Notification Service API',
+      title: 'ShopEase Notification Service API',
       version: '1.0.0',
-      description: 'API for sending mock email notifications for Beddings.lk',
+      description: 'API for sending mock email notifications for ShopEase',
     },
     servers: [
       {

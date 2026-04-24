@@ -368,4 +368,91 @@ router.get('/system-logs', authenticate, requireAdmin, async (req, res, next) =>
   }
 });
 
+
+/**
+ * @swagger
+ * /api/notifications/profile-update:
+ *   post:
+ *     summary: Send a profile update alert email
+ *     tags: [Notifications]
+ */
+router.post(
+  '/profile-update',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('name').trim().notEmpty().withMessage('Name is required'),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const { email, name } = req.body;
+      const subject = 'Your ShopEase Profile has been updated';
+      const bodyChunks = [
+        `\nHi ${name},`,
+        `\nThis is a quick notification to let you know that your profile details were recently updated.`,
+        `If you did not make this change, please contact support immediately.`
+      ];
+
+      printToConsole(email, subject, bodyChunks);
+      const emailBody = bodyChunks.join('\n');
+
+      const notification = await Notification.create({
+        recipientEmail: email,
+        type: 'status',
+        subject,
+        body: emailBody
+      });
+
+      res.status(200).json({ message: 'Profile update email sent', notification });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/notifications/login-alert:
+ *   post:
+ *     summary: Send a new login security alert email
+ *     tags: [Notifications]
+ */
+router.post(
+  '/login-alert',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const { email } = req.body;
+      const subject = 'Security Alert: New Login to your ShopEase Account';
+      const bodyChunks = [
+        `\nWe noticed a new login to your ShopEase account at ${new Date().toLocaleString()}.`,
+        `\nIf this was you, you can safely ignore this email.`,
+        `If you don't recognize this activity, please reset your password immediately.`
+      ];
+
+      printToConsole(email, subject, bodyChunks);
+      const emailBody = bodyChunks.join('\n');
+
+      const notification = await Notification.create({
+        recipientEmail: email,
+        type: 'status',
+        subject,
+        body: emailBody
+      });
+
+      res.status(200).json({ message: 'Login alert email sent', notification });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+
 module.exports = router;

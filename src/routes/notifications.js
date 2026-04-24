@@ -208,6 +208,57 @@ router.post(
 
 /**
  * @swagger
+ * /api/notifications/product-update:
+ *   post:
+ *     summary: Send a product lifecycle notification to an admin
+ *     description: Called by product-service when a product is created, updated, or deleted.
+ *     tags: [Notifications]
+ */
+router.post(
+  '/product-update',
+  [
+    body('adminEmail').isEmail().normalizeEmail().withMessage('Valid admin email is required'),
+    body('productName').trim().notEmpty().withMessage('Product name is required'),
+    body('action').isIn(['created', 'updated', 'deleted']).withMessage('Action must be created, updated, or deleted'),
+    body('productId').trim().notEmpty().withMessage('Product ID is required'),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const { adminEmail, productId, productName, action, price, category } = req.body;
+      const actionPast = action === 'created' ? 'Created' : action === 'updated' ? 'Updated' : 'Deleted';
+      const subject = `Product ${actionPast}: ${productName}`;
+      const bodyChunks = [
+        `\nA product has been ${action} in the catalog.`,
+        `\n--- Product Details ---`,
+        `Name: ${productName}`,
+        `Category: ${category || 'N/A'}`,
+        `Price: LKR ${price ?? 'N/A'}`,
+        `Product ID: ${productId}`,
+        `Action: ${actionPast}`,
+      ];
+
+      printToConsole(adminEmail, subject, bodyChunks);
+      const emailBody = bodyChunks.join('\n');
+
+      const notification = await Notification.create({
+        recipientEmail: adminEmail,
+        type: 'product',
+        subject,
+        body: emailBody,
+      });
+
+      res.status(200).json({ message: 'Product notification sent and logged', notification });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/notifications/my-history:
  *   get:
  *     summary: Get notification history for the authenticated user
@@ -239,7 +290,7 @@ router.get('/my-history', authenticate, async (req, res, next) => {
  * @swagger
  * /api/notifications/system-logs:
  *   get:
- *     summary: Get order status change history (Admin only)
+ *     summary: Get admin activity logs - order status changes and product lifecycle events (Admin only)
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
@@ -254,7 +305,7 @@ router.get('/my-history', authenticate, async (req, res, next) => {
  *           type: integer
  *     responses:
  *       200:
- *         description: List of system status logs
+ *         description: List of admin activity logs
  *       403:
  *         description: Admin access required
  */
@@ -264,16 +315,26 @@ router.get('/system-logs', authenticate, requireAdmin, async (req, res, next) =>
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const logs = await Notification.find({ type: 'status' })
+    // Fetch both order-status and product lifecycle logs
+    const logFilter = { type: { $in: ['status', 'product'] } };
+
+    const logs = await Notification.find(logFilter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // Hydrate logs with order details by calling the Order Service
+    // Hydrate logs: only order-status logs get order details
     const authHeader = req.headers.authorization;
     const hydratedLogs = await Promise.all(logs.map(async (log) => {
+      const logObj = log.toObject();
+
+      // For product-type logs, no hydration needed
+      if (log.type === 'product') {
+        return logObj;
+      }
+
+      // For status-type logs, hydrate with order details from order-service
       let orderDetails = null;
-      // Extract orderId from the subject string
       const match = log.subject.match(/Order #([a-f0-9]{24})/i) || log.subject.match(/Order #([a-zA-Z0-9]+)/);
       if (match && match[1]) {
         try {
@@ -288,10 +349,10 @@ router.get('/system-logs', authenticate, requireAdmin, async (req, res, next) =>
       } else {
         console.warn(`[Hydration Warning] Could not extract orderId from subject: "${log.subject}"`);
       }
-      return { ...log.toObject(), orderDetails };
+      return { ...logObj, orderDetails };
     }));
 
-    const total = await Notification.countDocuments({ type: 'status' });
+    const total = await Notification.countDocuments(logFilter);
 
     res.status(200).json({
       logs: hydratedLogs,
